@@ -23,7 +23,11 @@
 
   async function fetchJSON(url) {
     const token = window.__HERMES_SESSION_TOKEN__ || "";
-    const headers = token ? { "X-Session-Token": token } : {};
+    const headers = {};
+    if (token) {
+      headers["X-Hermes-Session-Token"] = token;
+      headers["Authorization"] = "Bearer " + token;
+    }
     const res = await fetch(url, { headers });
     if (!res.ok) throw new Error("HTTP " + res.status);
     return res.json();
