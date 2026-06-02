@@ -1,0 +1,13 @@
+{
+  "name": "wikime",
+  "label": "WikiMe",
+  "description": "Personal knowledge wiki that auto-extracts decisions and preferences from conversations.",
+  "icon": "BookOpen",
+  "version": "1.0.0",
+  "entry": "dist/index.js",
+  "tab": {
+    "path": "/wikime",
+    "position": "end"
+  },
+  "api": "plugin_api.py"
+}
