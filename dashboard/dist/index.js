@@ -8,8 +8,15 @@
 (function () {
   "use strict";
 
+  try {
+
   const SDK = window.__HERMES_PLUGIN_SDK__;
-  if (!SDK) return;
+  if (!SDK) {
+    console.error("[WikiMe] SDK not available, skipping registration");
+    return;
+  }
+
+  console.log("[WikiMe] SDK found, initializing...");
 
   const { React } = SDK;
   const h = React.createElement;
@@ -267,5 +274,9 @@
 
   if (window.__HERMES_PLUGINS__ && typeof window.__HERMES_PLUGINS__.register === "function") {
     window.__HERMES_PLUGINS__.register("wikime", WikiMePage);
+    console.log("[WikiMe] Registered successfully");
+  } else {
+    console.error("[WikiMe] register function not available");
   }
+  } catch(e) { console.error("[WikiMe] Init error:", e); }
 })();
