@@ -1,0 +1,15 @@
+# Generated wiki pages — these are your personal data
+vault/
+# Encryption keys — never commit these
+secret/
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+# OS
+.DS_Store
+Thumbs.db
+# Editor
+.vscode/
+.idea/
+*.swp

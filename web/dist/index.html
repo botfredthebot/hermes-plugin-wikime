@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WikiMe — Personal Knowledge Wiki</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d1117;
+    --bg-surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-muted: #8b949e;
+    --accent: #238636;
+    --accent-hover: #2ea043;
+    --blue: #58a6ff;
+    --red: #f85149;
+    --yellow: #d29922;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ---- Layout ---- */
+  .layout {
+    display: flex;
+    height: 100vh;
+  }
+
+  /* ---- Pane 1: Navigator ---- */
+  .pane-nav {
+    width: 260px;
+    min-width: 200px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .pane-nav-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pane-nav-header h2 {
+    font-size: 1em;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .search-box {
+    width: 100%;
+    padding: 6px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.85em;
+    outline: none;
+  }
+
+  .search-box:focus { border-color: var(--blue); }
+
+  .nav-section-title {
+    padding: 12px 16px 4px;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .nav-item {
+    padding: 6px 16px;
+    cursor: pointer;
+    font-size: 0.88em;
+    color: var(--text);
+    border-radius: 4px;
+    margin: 1px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-item:hover { background: #21262d; }
+  .nav-item.active { background: #1f2937; color: var(--blue); }
+
+  .nav-list { flex: 1; overflow-y: auto; padding-bottom: 16px; }
+
+  /* ---- Pane 2: Workspace ---- */
+  .pane-main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 36px;
+    background: var(--bg);
+  }
+
+  .pane-main h1 { font-size: 1.6em; margin-bottom: 4px; }
+  .pane-main h2 { font-size: 1.25em; margin-top: 28px; margin-bottom: 12px; color: var(--blue); }
+  .pane-main h3 { font-size: 1.05em; margin-top: 20px; margin-bottom: 8px; }
+  .pane-main p { line-height: 1.6; margin-bottom: 12px; }
+  .pane-main ul { padding-left: 20px; margin-bottom: 12px; }
+  .pane-main li { line-height: 1.7; }
+  .pane-main code {
+    font-family: var(--mono);
+    background: var(--bg-surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+  }
+  .pane-main pre {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    font-family: var(--mono);
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+  .pane-main pre code { background: none; padding: 0; }
+  .pane-main hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .pane-main blockquote {
+    border-left: 3px solid var(--border);
+    padding-left: 16px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .last-updated {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+  }
+  .badge-green { background: rgba(35,134,54,0.2); color: var(--accent); }
+  .badge-blue { background: rgba(88,166,255,0.15); color: var(--blue); }
+  .badge-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
+  .badge-red { background: rgba(248,81,73,0.15); color: var(--red); }
+
+  /* Changelog entries */
+  .changelog-entry {
+    border-left: 2px solid var(--border);
+    padding-left: 16px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .changelog-entry::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .changelog-date { font-size: 0.82em; color: var(--text-muted); margin-bottom: 4px; }
+  .changelog-summary { font-weight: 600; margin-bottom: 6px; }
+
+  details {
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  details summary {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+  }
+  details summary:hover { color: var(--text); }
+  details[open] summary { border-bottom: 1px solid var(--border); }
+  details > :not(summary) { padding: 12px; }
+
+  /* ---- Pane 3: Context Panel ---- */
+  .pane-context {
+    width: 280px;
+    min-width: 220px;
+    border-left: 1px solid var(--border);
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .context-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .context-section h3 {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  #graphCanvas {
+    width: 100%;
+    height: 180px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.85em;
+  }
+  .stat-label { color: var(--text-muted); }
+  .stat-value { font-weight: 600; }
+
+  .chat-source-btn {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.82em;
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 6px;
+    font-family: var(--font);
+  }
+  .chat-source-btn:hover { border-color: var(--blue); }
+
+  /* ---- Welcome state ---- */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 40px;
+  }
+  .welcome h2 { font-size: 1.4em; margin-bottom: 12px; color: var(--text); }
+  .welcome p { max-width: 400px; line-height: 1.6; }
+
+  /* ---- Scrollbar ---- */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 900px) {
+    .pane-context { display: none; }
+  }
+  @media (max-width: 600px) {
+    .pane-nav { width: 200px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout" id="app">
+  <!-- Pane 1: Navigator -->
+  <div class="pane-nav">
+    <div class="pane-nav-header">
+      <h2>🧠 WikiMe</h2>
+      <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search pages...">
+    </div>
+    <div class="nav-list" id="navList">
+      <div class="nav-section-title">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Pane 2: Workspace -->
+  <div class="pane-main" id="workspace">
+    <div class="welcome">
+      <h2>🧠 WikiMe Knowledge Wiki</h2>
+      <p>Your personal second brain. Pages are auto-generated from conversations. Select a page from the sidebar to view its active configuration and evolution history.</p>
+    </div>
+  </div>
+
+  <!-- Pane 3: Context Panel -->
+  <div class="pane-context">
+    <div class="context-section">
+      <h3>🗺️ Knowledge Graph</h3>
+      <canvas id="graphCanvas"></canvas>
+    </div>
+    <div class="context-section">
+      <h3>📊 Stats</h3>
+      <div class="stat-row"><span class="stat-label">Pages</span><span class="stat-value" id="statPages">0</span></div>
+      <div class="stat-row"><span class="stat-label">Total Revisions</span><span class="stat-value" id="statRevisions">0</span></div>
+    </div>
+    <div class="context-section">
+      <h3>🔗 Chat Sources</h3>
+      <p style="font-size:0.8em;color:var(--text-muted);">Click a timeline entry to jump to the original conversation.</p>
+      <div id="chatSources"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- WikiMe Dashboard Engine ----
+const WikiMe = {
+  pages: [],
+  activePage: null,
+
+  async init() {
+    await this.loadPages();
+    this.renderNav();
+    this.renderGraph();
+    this.bindSearch();
+    if (this.pages.length > 0) {
+      this.loadPage(this.pages[0].title);
+    }
+  },
+
+  async loadPages() {
+    // Try API first, fallback to embedded data
+    try {
+      const res = await fetch('/api/plugins/wikime/pages');
+      if (res.ok) {
+        this.pages = await res.json();
+        return;
+      }
+    } catch (e) { /* offline */ }
+
+    // Fallback: no pages loaded
+    this.pages = [];
+  },
+
+  renderNav() {
+    const nav = document.getElementById('navList');
+    if (this.pages.length === 0) {
+      nav.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:0.85em;">No pages yet. Run the bulk loader or start chatting!</div>';
+      return;
+    }
+
+    // Group by category (derive from title prefix)
+    const categories = {};
+    for (const p of this.pages) {
+      const cat = p.title.includes('-') ? p.title.split('-')[0] : 'General';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(p);
+    }
+
+    let html = '';
+    for (const [cat, pages] of Object.entries(categories)) {
+      html += `<div class="nav-section-title">${cat}</div>`;
+      for (const p of pages) {
+        const active = this.activePage === p.title ? ' active' : '';
+        html += `<div class="nav-item${active}" onclick="WikiMe.loadPage('${p.title.replace(/'/g, "\\'")}')">📄 ${p.title}</div>`;
+      }
+    }
+    nav.innerHTML = html;
+
+    document.getElementById('statPages').textContent = this.pages.length;
+  },
+
+  async loadPage(title) {
+    this.activePage = title;
+    this.renderNav(); // update active highlight
+
+    const ws = document.getElementById('workspace');
+    ws.innerHTML = '<p style="color:var(--text-muted);">Loading...</p>';
+
+    let content = null;
+    try {
+      const res = await fetch(`/api/plugins/wikime/page?title=${encodeURIComponent(title)}`);
+      if (res.ok) content = await res.json();
+    } catch (e) { /* offline */ }
+
+    if (!content || !content.markdown) {
+      ws.innerHTML = `<div class="welcome"><h2>📄 ${title}</h2><p>Page content unavailable. Ensure the WikiMe plugin API is running.</p></div>`;
+      return;
+    }
+
+    // Render the markdown content
+    ws.innerHTML = this.renderMarkdown(content.markdown);
+    this.extractChatSources(content.markdown);
+  },
+
+  renderMarkdown(md) {
+    // Minimal markdown renderer
+    let html = md
+      // Escape HTML first
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      // Headers
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      // Bold
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Italic
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // Code blocks
+      .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+      // Inline code
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      // Lists
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      // Horizontal rule
+      .replace(/^---$/gm, '<hr>')
+      // Blockquotes
+      .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+      // Line breaks
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    // Wrap in paragraphs
+    html = '<p>' + html + '</p>';
+
+    // Fix: don't wrap block elements in <p>
+    html = html.replace(/<p>(<(?:h[1-6]|ul|ol|li|pre|blockquote|hr|details))/g, '$1');
+    html = html.replace(/(<\/(?:h[1-6]|ul|ol|li|pre|blockquote|details|hr)>)\s*<\/p>/g, '$1');
+
+    // Handle <details><summary> blocks (keep as-is from source)
+    html = html.replace(/&lt;details&gt;/g, '<details>');
+    html = html.replace(/&lt;\/details&gt;/g, '</details>');
+    html = html.replace(/&lt;summary&gt;/g, '<summary>');
+    html = html.replace(/&lt;\/summary&gt;/g, '</summary>');
+
+    return html;
+  },
+
+  extractChatSources(markdown) {
+    const container = document.getElementById('chatSources');
+    const regex = /<!--\s*(\{[^}]+\})\s*-->/g;
+    const sources = [];
+    let match;
+    while ((match = regex.exec(markdown)) !== null) {
+      try {
+        const meta = JSON.parse(match[1]);
+        sources.push(meta);
+      } catch (e) { /* skip */ }
+    }
+
+    if (sources.length === 0) {
+      container.innerHTML = '<p style="font-size:0.8em;color:var(--text-muted);">No chat sources linked yet.</p>';
+      return;
+    }
+
+    container.innerHTML = sources.map((s, i) => {
+      const label = s.channel ? `${s.channel} — ${s.message_id || ''}` : `Source ${i+1}`;
+      return `<button class="chat-source-btn" onclick="WikiMe.jumpToChat('${s.session_id || ''}', '${s.message_id || ''}')">🔗 ${label}</button>`;
+    }).join('');
+  },
+
+  jumpToChat(sessionId, messageId) {
+    if (!sessionId) return;
+    // Try to open Hermes chat view
+    const url = `/api/plugins/wikime/source-chat?session_id=${encodeURIComponent(sessionId)}&message_id=${encodeURIComponent(messageId)}`;
+    fetch(url).then(r => r.ok ? r.json() : null).then(data => {
+      if (data) {
+        alert(`Chat context:\n${JSON.stringify(data, null, 2)}`);
+      }
+    }).catch(() => {
+      alert(`Would jump to chat: session=${sessionId} message=${messageId}`);
+    });
+  },
+
+  renderGraph() {
+    const canvas = document.getElementById('graphCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width = canvas.offsetWidth;
+    const H = canvas.height = canvas.offsetHeight;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const pages = this.pages;
+    if (pages.length === 0) {
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No pages yet', W/2, H/2);
+      return;
+    }
+
+    // Simple force-directed layout (pre-computed positions)
+    const nodes = pages.map((p, i) => {
+      const angle = (2 * Math.PI * i) / pages.length;
+      const r = Math.min(W, H) * 0.3;
+      return {
+        x: W/2 + r * Math.cos(angle),
+        y: H/2 + r * Math.sin(angle),
+        label: p.title.length > 12 ? p.title.slice(0,12) + '…' : p.title,
+      };
+    });
+
+    // Draw edges (connect all for now — could be smarter)
+    ctx.strokeStyle = '#30363d';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i+1; j < nodes.length; j++) {
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.stroke();
+      }
+    }
+
+    // Draw nodes
+    nodes.forEach(n => {
+      ctx.fillStyle = '#238636';
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c9d1d9';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(n.label, n.x, n.y + 16);
+    });
+  },
+
+  bindSearch() {
+    const box = document.getElementById('searchBox');
+    box.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('.nav-item').forEach(el => {
+        const match = el.textContent.toLowerCase().includes(q);
+        el.style.display = match ? '' : 'none';
+      });
+    });
+  },
+};
+
+// Boot
+WikiMe.init();
+</script>
+</body>
+</html>

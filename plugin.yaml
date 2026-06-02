@@ -1,0 +1,8 @@
+name: wikime
+version: 1.0.0
+description: "Automated personal knowledge wiki that extracts facts, decisions, and preferences from conversations into structured Markdown files with evolution timelines."
+author: "Kit Bryan & OWL"
+kind: standalone
+platforms:
+  - linux
+  - macos
